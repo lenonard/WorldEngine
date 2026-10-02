@@ -27,60 +27,110 @@
     return prefix + String(path || '').replace(/^\.\//, '');
   }
 
-  function validateGraph(graph) {
-    if (!graph || typeof graph !== 'object') throw new PackageError('graph.json must be an object');
-    if (!Array.isArray(graph.nodes)) throw new PackageError('graph.json must contain nodes[]');
-    if (!Array.isArray(graph.edges)) throw new PackageError('graph.json must contain edges[]');
+  function validateGraph(graph, label = 'graph') {
+    if (!graph || typeof graph !== 'object') throw new PackageError(`${label} must be an object`);
+    if (!Array.isArray(graph.nodes)) throw new PackageError(`${label} must contain nodes[]`);
+    if (!Array.isArray(graph.edges)) throw new PackageError(`${label} must contain edges[]`);
 
     const ids = new Set();
     for (const node of graph.nodes) {
       if (!node || typeof node.id !== 'string' || !node.id.trim()) {
-        throw new PackageError('Every node needs a non-empty string id');
+        throw new PackageError(`Every node in ${label} needs a non-empty string id`);
       }
-      if (ids.has(node.id)) throw new PackageError(`Duplicate node id: ${node.id}`);
+      if (ids.has(node.id)) throw new PackageError(`Duplicate node id in ${label}: ${node.id}`);
       ids.add(node.id);
     }
 
     for (const edge of graph.edges) {
       if (!edge || !ids.has(edge.from) || !ids.has(edge.to)) {
-        throw new PackageError(`Edge points to an unknown node: ${JSON.stringify(edge)}`);
+        throw new PackageError(`Edge in ${label} points to an unknown node: ${JSON.stringify(edge)}`);
       }
     }
 
     return graph;
   }
 
-  function validateExecution(execution, graph) {
-    if (execution == null) return null;
-    if (!execution || typeof execution !== 'object' || Array.isArray(execution)) {
-      throw new PackageError('execution data must be an object');
-    }
-    if (!Array.isArray(execution.trace)) {
-      throw new PackageError('execution data must contain trace[]');
-    }
+  function graphForView(views, viewId, fallback) {
+    if (!views || !viewId || !views[viewId]) return fallback;
+    return views[viewId].graph || views[viewId];
+  }
 
+  function validateTrace(trace, graph, label) {
+    if (!Array.isArray(trace)) throw new PackageError(`${label} must contain trace[]`);
     const nodeIds = new Set(graph.nodes.map(node => node.id));
     const edgeIds = new Set(graph.edges.map(edge => edge.id).filter(Boolean));
 
-    execution.trace.forEach((step, index) => {
+    trace.forEach((step, index) => {
       if (!step || typeof step !== 'object' || Array.isArray(step)) {
-        throw new PackageError(`Execution step ${index} must be an object`);
+        throw new PackageError(`${label} step ${index} must be an object`);
       }
       if (step.node != null && !nodeIds.has(step.node)) {
-        throw new PackageError(`Execution step ${index} points to unknown node: ${step.node}`);
+        throw new PackageError(`${label} step ${index} points to unknown node: ${step.node}`);
       }
       if (step.edge != null && edgeIds.size && !edgeIds.has(step.edge)) {
-        throw new PackageError(`Execution step ${index} points to unknown edge: ${step.edge}`);
+        throw new PackageError(`${label} step ${index} points to unknown edge: ${step.edge}`);
       }
       if (step.variables != null && (typeof step.variables !== 'object' || Array.isArray(step.variables))) {
-        throw new PackageError(`Execution step ${index} variables must be an object`);
+        throw new PackageError(`${label} step ${index} variables must be an object`);
       }
       if (step.callStack != null && !Array.isArray(step.callStack)) {
-        throw new PackageError(`Execution step ${index} callStack must be an array`);
+        throw new PackageError(`${label} step ${index} callStack must be an array`);
       }
     });
+  }
 
+  function validateExecution(execution, graph, views) {
+    if (execution == null) return null;
+    if (Array.isArray(execution)) execution = { scenarios: execution };
+    if (!execution || typeof execution !== 'object') {
+      throw new PackageError('execution data must be an object');
+    }
+
+    if (Array.isArray(execution.scenarios)) {
+      execution.scenarios.forEach((scenario, index) => {
+        if (!scenario || typeof scenario !== 'object') {
+          throw new PackageError(`Scenario ${index} must be an object`);
+        }
+        const scenarioGraph = graphForView(views, scenario.view, graph);
+        validateTrace(scenario.trace, scenarioGraph, `scenario ${scenario.id || index}`);
+      });
+      return execution;
+    }
+
+    validateTrace(execution.trace, graph, 'execution');
     return execution;
+  }
+
+  function normalizeView(raw, id, spec) {
+    const graph = raw && raw.graph && Array.isArray(raw.graph.nodes) ? raw.graph : raw;
+    validateGraph(graph, `view ${id}`);
+    return {
+      id: raw.id || id,
+      type: raw.type || (spec && spec.type) || id,
+      title: raw.title || (spec && spec.title) || id,
+      description: raw.description || (spec && spec.description) || '',
+      graph
+    };
+  }
+
+  async function loadManifestViews(zip, manifest, prefix) {
+    const result = {};
+    if (!manifest.views || typeof manifest.views !== 'object') return result;
+
+    for (const [id, spec] of Object.entries(manifest.views)) {
+      if (typeof spec === 'string') {
+        const raw = await readJson(zip, relativePath(prefix, spec));
+        result[id] = normalizeView(raw, id, null);
+      } else if (spec && typeof spec === 'object') {
+        if (spec.path) {
+          const raw = await readJson(zip, relativePath(prefix, spec.path));
+          result[id] = normalizeView(raw, id, spec);
+        } else if (spec.graph || Array.isArray(spec.nodes)) {
+          result[id] = normalizeView(spec, id, spec);
+        }
+      }
+    }
+    return result;
   }
 
   async function loadZip(file) {
@@ -95,43 +145,66 @@
 
     const manifestPath = names.find(name => /(^|\/)manifest\.json$/i.test(name));
     let manifest;
-    let graphPath;
+    let graphPath = null;
     let prefix = '';
 
     if (manifestPath) {
       manifest = await readJson(zip, manifestPath);
       prefix = pathPrefix(manifestPath);
-      graphPath = manifest.graph ? relativePath(prefix, manifest.graph) : prefix + 'graph.json';
+      if (manifest.graph) graphPath = relativePath(prefix, manifest.graph);
+      else if (!manifest.views) graphPath = prefix + 'graph.json';
     } else {
       graphPath = names.find(name => /(^|\/)(graph|worldengine)\.json$/i.test(name));
       if (!graphPath) {
         const jsonFiles = names.filter(name => /\.json$/i.test(name));
         if (jsonFiles.length === 1) graphPath = jsonFiles[0];
       }
-      if (!graphPath) throw new PackageError('ZIP needs manifest.json + graph.json, or a graph/worldengine JSON file.');
+      if (!graphPath) throw new PackageError('ZIP needs manifest.json with graph/views, or a graph/worldengine JSON file.');
       prefix = pathPrefix(graphPath);
       manifest = { format: 'worldengine-package', version: '0.1', graph: graphPath };
     }
 
-    const graph = validateGraph(await readJson(zip, graphPath));
+    const views = await loadManifestViews(zip, manifest, prefix);
+    let graph = graphPath && zip.file(graphPath) ? validateGraph(await readJson(zip, graphPath)) : null;
+
+    if (!graph && Object.keys(views).length) {
+      const defaultKey = manifest.defaultView && views[manifest.defaultView]
+        ? manifest.defaultView
+        : (views.controlFlow ? 'controlFlow' : Object.keys(views)[0]);
+      graph = views[defaultKey].graph;
+    }
+
+    if (!graph) throw new PackageError('No renderable graph found in package');
+
+    if (!Object.keys(views).length && graph.views && typeof graph.views === 'object') {
+      for (const [id, raw] of Object.entries(graph.views)) {
+        views[id] = normalizeView(raw, id, raw);
+      }
+    }
 
     let execution = graph.execution || null;
     let executionPath = null;
-    if (manifest.execution) {
-      executionPath = relativePath(prefix, manifest.execution);
+    const executionSpec = manifest.execution || manifest.scenarios;
+    if (executionSpec) {
+      executionPath = relativePath(prefix, executionSpec);
     } else {
-      const candidate = prefix + 'execution.json';
-      if (zip.file(candidate)) executionPath = candidate;
+      const scenarioCandidate = prefix + 'scenarios.json';
+      const executionCandidate = prefix + 'execution.json';
+      if (zip.file(scenarioCandidate)) executionPath = scenarioCandidate;
+      else if (zip.file(executionCandidate)) executionPath = executionCandidate;
     }
     if (executionPath) execution = await readJson(zip, executionPath);
-    execution = validateExecution(execution, graph);
+    if (Array.isArray(execution)) execution = { scenarios: execution };
+    execution = validateExecution(execution, graph, views);
 
     const sources = {};
-    const sourceRefs = new Set(
-      graph.nodes
-        .map(node => node.source && node.source.file)
-        .filter(Boolean)
-    );
+    const allGraphs = [graph, ...Object.values(views).map(view => view.graph)].filter(Boolean);
+    const sourceRefs = new Set();
+    allGraphs.forEach(item => {
+      item.nodes.forEach(node => {
+        if (node.source && node.source.file) sourceRefs.add(node.source.file);
+      });
+    });
 
     for (const sourcePath of sourceRefs) {
       const candidates = new Set([
@@ -157,6 +230,7 @@
     return {
       manifest,
       graph,
+      views,
       execution,
       sources,
       fileName: file.name,
