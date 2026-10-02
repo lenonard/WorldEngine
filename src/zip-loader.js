@@ -108,7 +108,7 @@
         const jsonFiles = names.filter(name => /\.json$/i.test(name));
         if (jsonFiles.length === 1) graphPath = jsonFiles[0];
       }
-      if (!graphPath) throw new PackageError('ZIP needs manifest.json + graph.json, or a single graph/worldengine JSON file.');
+      if (!graphPath) throw new PackageError('ZIP needs manifest.json + graph.json, or a graph/worldengine JSON file.');
       prefix = pathPrefix(graphPath);
       manifest = { format: 'worldengine-package', version: '0.1', graph: graphPath };
     }
@@ -134,11 +134,23 @@
     );
 
     for (const sourcePath of sourceRefs) {
-      let resolved = sourcePath;
-      if (!zip.file(resolved) && manifestPath && manifest.sourceRoot && !sourcePath.startsWith(manifest.sourceRoot)) {
-        resolved = relativePath(prefix, manifest.sourceRoot) + sourcePath.replace(/^\.\//, '');
+      const candidates = new Set([
+        sourcePath,
+        relativePath(prefix, sourcePath)
+      ]);
+
+      if (manifest.sourceRoot) {
+        let rootPath = String(manifest.sourceRoot).replace(/^\.\//, '');
+        if (rootPath && !rootPath.endsWith('/')) rootPath += '/';
+        const normalizedSource = String(sourcePath).replace(/^\.\//, '');
+        const withoutRoot = rootPath && normalizedSource.startsWith(rootPath)
+          ? normalizedSource.slice(rootPath.length)
+          : normalizedSource;
+        candidates.add(relativePath(prefix, rootPath + withoutRoot));
       }
-      const entry = zip.file(resolved) || zip.file(sourcePath);
+
+      const resolved = Array.from(candidates).find(candidate => zip.file(candidate));
+      const entry = resolved ? zip.file(resolved) : null;
       if (entry) sources[sourcePath] = await entry.async('string');
     }
 
