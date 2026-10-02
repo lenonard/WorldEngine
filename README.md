@@ -29,13 +29,18 @@ The browser renderer does **not** parse programming languages. It renders a lang
 - Node focus mode: unrelated blocks fade when a block is selected.
 - Detail panel with summary, notes, source references and source snippets.
 - Hierarchical `subgraph` / `group` blocks.
-- Double-click a subgraph to expand/collapse it.
+- Double-click a subgraph to expand it.
+- Expanded groups remain visible as collapse chips so the parent can always be collapsed again.
+- `Collapse all` appears when multiple groups are expanded.
+- Light / dark theme toggle with persisted preference.
+- Semantic branch colors: True/Yes/Success paths are green; False/No/Fail/Error paths are red.
 - Optional execution trace playback.
 - Play / pause / previous / next / reset / speed controls.
 - Animated active block and transition.
 - Runtime variables with changed-value highlighting.
 - Call-stack inspector.
 - Trace timeline slider.
+- Larger runtime/detail typography for readability.
 - Built-in runtime sample.
 
 ## Run
@@ -166,16 +171,37 @@ A large source file should not become one giant flat flowchart. The analyzer sho
 
 The execution trace follows the same rule: it should visualize meaningful runtime transitions, not every trivial machine-level operation.
 
+## Logic coverage and current limits
+
+WorldEngine v0.2 can represent normal structured control flow well: sequential work, decisions, loops/back edges, nested branches, functions/subgraphs, external calls, returns, errors, runtime variables and call stacks.
+
+It is **not yet a universal 100% representation of every possible program behavior**. Important cases that need richer IR/view support include:
+
+- multiple named entry/exit ports from one subgraph;
+- exception propagation across several call levels;
+- async/await scheduling and event-loop causality;
+- callbacks, promises and event-driven flows with many possible continuations;
+- threads, locks, races and true concurrent execution;
+- recursion visualization beyond a simple call-stack snapshot;
+- dynamic dispatch, reflection, generated code and runtime-loaded modules;
+- preprocessor/macros/templates/metaprogramming where source structure differs from runtime structure;
+- explicit data-flow/dependency graphs in addition to control flow;
+- multiple execution scenarios and coverage comparison rather than one trace path.
+
+The long-term goal is not to force all of these into one giant flowchart. The engine should expose multiple coordinated views (semantic control flow, call graph, data flow, execution scenarios, concurrency lanes) while keeping the first view compact.
+
 ## Repository layout
 
 ```text
 index.html                    App shell
 styles.css                    Base visual system
 runtime.css                   Execution/runtime visuals
+ui-enhancements.css           Theme, readability, branch colors, collapse controls
 src/zip-loader.js             Local ZIP/package reader
 src/engine.js                 Graph layout + renderer + interaction
 src/execution-engine.js       Execution highlighting bridge
 src/execution-player.js       Trace playback + variables + call stack
+src/ui-enhancements.js        Theme toggle + semantic edges + expanded-group controls
 src/app.js                    UI wiring
 src/sample-data.js            Built-in runtime demo
 worldengine.schema.json       IR schema
