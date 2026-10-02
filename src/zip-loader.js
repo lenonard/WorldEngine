@@ -19,6 +19,14 @@
     }
   }
 
+  function pathPrefix(path) {
+    return path && path.includes('/') ? path.slice(0, path.lastIndexOf('/') + 1) : '';
+  }
+
+  function relativePath(prefix, path) {
+    return prefix + String(path || '').replace(/^\.\//, '');
+  }
+
   function validateGraph(graph) {
     if (!graph || typeof graph !== 'object') throw new PackageError('graph.json must be an object');
     if (!Array.isArray(graph.nodes)) throw new PackageError('graph.json must contain nodes[]');
@@ -42,6 +50,39 @@
     return graph;
   }
 
+  function validateExecution(execution, graph) {
+    if (execution == null) return null;
+    if (!execution || typeof execution !== 'object' || Array.isArray(execution)) {
+      throw new PackageError('execution data must be an object');
+    }
+    if (!Array.isArray(execution.trace)) {
+      throw new PackageError('execution data must contain trace[]');
+    }
+
+    const nodeIds = new Set(graph.nodes.map(node => node.id));
+    const edgeIds = new Set(graph.edges.map(edge => edge.id).filter(Boolean));
+
+    execution.trace.forEach((step, index) => {
+      if (!step || typeof step !== 'object' || Array.isArray(step)) {
+        throw new PackageError(`Execution step ${index} must be an object`);
+      }
+      if (step.node != null && !nodeIds.has(step.node)) {
+        throw new PackageError(`Execution step ${index} points to unknown node: ${step.node}`);
+      }
+      if (step.edge != null && edgeIds.size && !edgeIds.has(step.edge)) {
+        throw new PackageError(`Execution step ${index} points to unknown edge: ${step.edge}`);
+      }
+      if (step.variables != null && (typeof step.variables !== 'object' || Array.isArray(step.variables))) {
+        throw new PackageError(`Execution step ${index} variables must be an object`);
+      }
+      if (step.callStack != null && !Array.isArray(step.callStack)) {
+        throw new PackageError(`Execution step ${index} callStack must be an array`);
+      }
+    });
+
+    return execution;
+  }
+
   async function loadZip(file) {
     if (!window.JSZip) {
       throw new PackageError('JSZip is unavailable. Check your internet connection and reload the page.');
@@ -52,14 +93,15 @@
     const zip = await window.JSZip.loadAsync(await file.arrayBuffer());
     const names = Object.keys(zip.files).filter(name => !zip.files[name].dir);
 
-    let manifestPath = names.find(name => /(^|\/)manifest\.json$/i.test(name));
+    const manifestPath = names.find(name => /(^|\/)manifest\.json$/i.test(name));
     let manifest;
     let graphPath;
+    let prefix = '';
 
     if (manifestPath) {
       manifest = await readJson(zip, manifestPath);
-      const prefix = manifestPath.includes('/') ? manifestPath.slice(0, manifestPath.lastIndexOf('/') + 1) : '';
-      graphPath = manifest.graph ? prefix + manifest.graph.replace(/^\.\//, '') : prefix + 'graph.json';
+      prefix = pathPrefix(manifestPath);
+      graphPath = manifest.graph ? relativePath(prefix, manifest.graph) : prefix + 'graph.json';
     } else {
       graphPath = names.find(name => /(^|\/)(graph|worldengine)\.json$/i.test(name));
       if (!graphPath) {
@@ -67,12 +109,24 @@
         if (jsonFiles.length === 1) graphPath = jsonFiles[0];
       }
       if (!graphPath) throw new PackageError('ZIP needs manifest.json + graph.json, or a single graph/worldengine JSON file.');
+      prefix = pathPrefix(graphPath);
       manifest = { format: 'worldengine-package', version: '0.1', graph: graphPath };
     }
 
     const graph = validateGraph(await readJson(zip, graphPath));
-    const sources = {};
 
+    let execution = graph.execution || null;
+    let executionPath = null;
+    if (manifest.execution) {
+      executionPath = relativePath(prefix, manifest.execution);
+    } else {
+      const candidate = prefix + 'execution.json';
+      if (zip.file(candidate)) executionPath = candidate;
+    }
+    if (executionPath) execution = await readJson(zip, executionPath);
+    execution = validateExecution(execution, graph);
+
+    const sources = {};
     const sourceRefs = new Set(
       graph.nodes
         .map(node => node.source && node.source.file)
@@ -82,8 +136,7 @@
     for (const sourcePath of sourceRefs) {
       let resolved = sourcePath;
       if (!zip.file(resolved) && manifestPath && manifest.sourceRoot && !sourcePath.startsWith(manifest.sourceRoot)) {
-        const prefix = manifestPath.includes('/') ? manifestPath.slice(0, manifestPath.lastIndexOf('/') + 1) : '';
-        resolved = prefix + manifest.sourceRoot.replace(/^\.\//, '') + sourcePath.replace(/^\.\//, '');
+        resolved = relativePath(prefix, manifest.sourceRoot) + sourcePath.replace(/^\.\//, '');
       }
       const entry = zip.file(resolved) || zip.file(sourcePath);
       if (entry) sources[sourcePath] = await entry.async('string');
@@ -92,6 +145,7 @@
     return {
       manifest,
       graph,
+      execution,
       sources,
       fileName: file.name,
       fileCount: names.length
@@ -101,4 +155,5 @@
   root.PackageError = PackageError;
   root.loadZip = loadZip;
   root.validateGraph = validateGraph;
+  root.validateExecution = validateExecution;
 })();
