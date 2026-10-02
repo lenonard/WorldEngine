@@ -1,11 +1,14 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://worldengine.local/schema/v0.2.json",
-  "title": "WorldEngine IR v0.2",
+  "$id": "https://worldengine.local/schema/v0.3.json",
+  "title": "WorldEngine IR v0.3 Graph",
   "type": "object",
   "required": ["nodes", "edges"],
   "properties": {
     "version": { "type": "string" },
+    "type": { "type": "string" },
+    "title": { "type": "string" },
+    "description": { "type": "string" },
     "entryNode": { "type": "string" },
     "program": {
       "type": "object",
@@ -27,6 +30,10 @@
       "items": { "$ref": "#/$defs/edge" }
     },
     "execution": { "$ref": "#/$defs/execution" },
+    "views": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/view" }
+    },
     "annotations": {
       "type": "array",
       "items": { "type": "object", "additionalProperties": true }
@@ -51,7 +58,7 @@
         "id": { "type": "string", "minLength": 1 },
         "type": {
           "type": "string",
-          "examples": ["start", "process", "decision", "subgraph", "external", "call", "return", "error", "end"]
+          "examples": ["start", "process", "decision", "subgraph", "function", "data", "value", "async", "await", "task", "thread", "external", "call", "return", "error", "end"]
         },
         "label": { "type": "string" },
         "summary": { "type": "string" },
@@ -145,19 +152,85 @@
       },
       "additionalProperties": true
     },
-    "execution": {
+    "scenario": {
       "type": "object",
       "required": ["trace"],
       "properties": {
         "id": { "type": "string" },
         "title": { "type": "string" },
         "description": { "type": "string" },
+        "view": { "type": "string" },
         "trace": {
           "type": "array",
           "items": { "$ref": "#/$defs/executionStep" }
         }
       },
       "additionalProperties": true
+    },
+    "execution": {
+      "type": "object",
+      "oneOf": [
+        {
+          "required": ["trace"],
+          "properties": {
+            "id": { "type": "string" },
+            "title": { "type": "string" },
+            "description": { "type": "string" },
+            "view": { "type": "string" },
+            "trace": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/executionStep" }
+            }
+          }
+        },
+        {
+          "required": ["scenarios"],
+          "properties": {
+            "scenarios": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/scenario" }
+            }
+          }
+        }
+      ],
+      "additionalProperties": true
+    },
+    "view": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["nodes", "edges"],
+          "properties": {
+            "id": { "type": "string" },
+            "type": { "type": "string" },
+            "title": { "type": "string" },
+            "description": { "type": "string" },
+            "nodes": { "type": "array", "items": { "$ref": "#/$defs/node" } },
+            "edges": { "type": "array", "items": { "$ref": "#/$defs/edge" } }
+          },
+          "additionalProperties": true
+        },
+        {
+          "type": "object",
+          "required": ["graph"],
+          "properties": {
+            "id": { "type": "string" },
+            "type": { "type": "string" },
+            "title": { "type": "string" },
+            "description": { "type": "string" },
+            "graph": {
+              "type": "object",
+              "required": ["nodes", "edges"],
+              "properties": {
+                "nodes": { "type": "array", "items": { "$ref": "#/$defs/node" } },
+                "edges": { "type": "array", "items": { "$ref": "#/$defs/edge" } }
+              },
+              "additionalProperties": true
+            }
+          },
+          "additionalProperties": true
+        }
+      ]
     }
   }
 }
