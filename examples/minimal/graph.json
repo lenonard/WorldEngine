@@ -1,5 +1,5 @@
 {
-  "version": "0.1",
+  "version": "0.2",
   "program": {
     "title": "Find active users",
     "summary": "Filters a list and returns only active users.",
@@ -28,7 +28,7 @@
     }
   ],
   "edges": [
-    { "from": "start", "to": "filter" },
-    { "from": "filter", "to": "return" }
+    { "id": "e1", "from": "start", "to": "filter" },
+    { "id": "e2", "from": "filter", "to": "return" }
   ]
 }
