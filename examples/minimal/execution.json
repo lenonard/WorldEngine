@@ -1,0 +1,42 @@
+{
+  "id": "active-users-demo",
+  "title": "Filter active users",
+  "trace": [
+    {
+      "node": "start",
+      "event": "enter",
+      "label": "Receive input list",
+      "variablesSnapshot": true,
+      "variables": {
+        "users.length": 4
+      },
+      "callStack": [
+        { "name": "findActiveUsers", "file": "source/main.js", "line": 1 }
+      ]
+    },
+    {
+      "node": "filter",
+      "edge": "e1",
+      "event": "process",
+      "label": "Filter active users",
+      "variables": {
+        "activeUsers.length": 3
+      },
+      "callStack": [
+        { "name": "findActiveUsers", "file": "source/main.js", "line": 2 }
+      ]
+    },
+    {
+      "node": "return",
+      "edge": "e2",
+      "event": "return",
+      "label": "Return filtered list",
+      "variables": {
+        "result.length": 3
+      },
+      "callStack": [
+        { "name": "findActiveUsers", "file": "source/main.js", "line": 3 }
+      ]
+    }
+  ]
+}
