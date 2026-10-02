@@ -1,6 +1,6 @@
 # WorldEngine
 
-WorldEngine turns a semantic program description into an interactive visual graph in the browser.
+WorldEngine turns a semantic program description into an interactive visual model in the browser.
 
 ```text
 Source code
@@ -10,10 +10,11 @@ AI analysis / semantic compression
 WorldEngine IR package (.zip)
    ↓
 WorldEngine web UI
-   ↓
-Blocks · connections · colors · notes · source references
-   ↓
-Optional execution trace · variables · call stack · animation
+   ├── Control Flow
+   ├── Call Graph
+   ├── Data Flow
+   ├── Async / Concurrency
+   └── Execution Scenarios
 ```
 
 The browser renderer does **not** parse programming languages. It renders a language-independent IR produced after the source has been understood.
@@ -21,31 +22,21 @@ The browser renderer does **not** parse programming languages. It renders a lang
 ## Current prototype
 
 - Pure HTML/CSS/JavaScript; no build step.
-- Open or drag/drop a `.zip` package.
-- ZIP is read locally in the browser.
-- Semantic blocks and directed connections.
-- Automatic top-down layout.
-- Pan, zoom and fit-to-screen.
-- Node focus mode: unrelated blocks fade when a block is selected.
-- Detail panel with summary, notes, source references and source snippets.
+- Open or drag/drop a `.zip` package locally in the browser.
+- Semantic blocks, directed connections, colors, notes and source references.
+- Automatic layout, pan, zoom and fit-to-screen.
 - Hierarchical `subgraph` / `group` blocks.
 - Double-click a subgraph to expand it.
-- Expanded groups remain visible as collapse chips so the parent can always be collapsed again.
-- `Collapse all` appears when multiple groups are expanded.
-- Light / dark theme toggle with persisted preference.
-- Semantic branch colors: True/Yes/Success paths are green; False/No/Fail/Error paths are red.
-- Optional execution trace playback.
-- Play / pause / previous / next / reset / speed controls.
-- Animated active block and transition.
-- Runtime variables with changed-value highlighting.
-- Call-stack inspector.
-- Trace timeline slider.
-- Larger runtime/detail typography for readability.
-- Built-in runtime sample.
+- Expanded groups expose dedicated collapse chips; multiple open groups can be collapsed together.
+- Light / dark theme with persisted preference.
+- Semantic branch colors: true/success paths green, false/error paths red.
+- Execution trace playback with variables, call stack, timeline and animated active transitions.
+- Larger runtime/detail typography.
+- WorldEngine v0.3 multi-view navigation: Control Flow, Call Graph, Data Flow and Async / Concurrency.
+- Multiple named execution scenarios in one package.
+- Built-in v0.3 sample with four views and several scenarios.
 
 ## Run
-
-For the simplest local test, open `index.html` in a modern browser.
 
 Recommended local server:
 
@@ -55,24 +46,24 @@ python -m http.server 8080
 
 Then open `http://localhost:8080`.
 
-> ZIP support currently loads JSZip 3.10.1 from jsDelivr. The built-in sample works without opening a ZIP.
+> ZIP support loads JSZip 3.10.1 from jsDelivr. The built-in sample can be explored immediately with **Load sample**.
 
 ## Install once, update with Git
 
-Instead of downloading the GitHub source ZIP after every change, clone the repository once:
+Clone once:
 
 ```bash
 git clone https://github.com/lenonard/WorldEngine.git
 cd WorldEngine
 ```
 
-After later updates, run only:
+After later updates:
 
 ```bash
 git pull origin main
 ```
 
-If you have local changes you want to keep:
+If you have local changes:
 
 ```bash
 git status
@@ -81,132 +72,101 @@ git pull --rebase origin main
 git stash pop
 ```
 
-This downloads only Git changes, not a new full source ZIP every time.
+## WorldEngine ZIP format v0.3
 
-## WorldEngine ZIP format v0.2
-
-Recommended package structure:
+Recommended structure:
 
 ```text
-my-analysis.zip
+analysis.zip
 ├── manifest.json
-├── graph.json
-├── execution.json       # optional
+├── views/
+│   ├── control-flow.json
+│   ├── call-graph.json
+│   ├── data-flow.json
+│   └── async.json
+├── scenarios.json
 └── source/
-    ├── main.js
-    └── payment.js
+    └── ...
 ```
 
-Minimal `manifest.json`:
+Example `manifest.json`:
 
 ```json
 {
   "format": "worldengine-package",
-  "version": "0.2",
-  "graph": "graph.json",
-  "execution": "execution.json",
+  "version": "0.3",
+  "defaultView": "controlFlow",
+  "defaultScenario": "happy-path",
+  "views": {
+    "controlFlow": "views/control-flow.json",
+    "callGraph": "views/call-graph.json",
+    "dataFlow": "views/data-flow.json",
+    "async": "views/async.json"
+  },
+  "scenarios": "scenarios.json",
   "sourceRoot": "source/"
 }
 ```
 
-`execution.json` is optional. v0.1 graph-only packages still render.
+v0.3 remains backward-compatible with earlier graph-only and single-trace packages.
 
-Minimal `graph.json`:
+See:
 
-```json
-{
-  "version": "0.2",
-  "program": {
-    "title": "Example",
-    "summary": "What the program does",
-    "language": "JavaScript",
-    "entryPoint": "main()"
-  },
-  "nodes": [
-    { "id": "start", "type": "start", "label": "Start" },
-    { "id": "work", "type": "process", "label": "Process input" },
-    { "id": "done", "type": "return", "label": "Return result" }
-  ],
-  "edges": [
-    { "id": "e1", "from": "start", "to": "work" },
-    { "id": "e2", "from": "work", "to": "done" }
-  ]
-}
-```
-
-Minimal `execution.json`:
-
-```json
-{
-  "trace": [
-    {
-      "node": "start",
-      "event": "enter",
-      "variablesSnapshot": true,
-      "variables": { "input": 3 },
-      "callStack": [{ "name": "main", "file": "source/main.js", "line": 1 }]
-    },
-    {
-      "node": "work",
-      "edge": "e1",
-      "event": "process",
-      "variables": { "result": 6 }
-    },
-    {
-      "node": "done",
-      "edge": "e2",
-      "event": "return"
-    }
-  ]
-}
-```
-
-See [`docs/IR-v0.2.md`](docs/IR-v0.2.md) for execution traces, variables and call stacks. The original graph contract remains documented in [`docs/IR-v0.1.md`](docs/IR-v0.1.md). A machine-readable schema is in [`worldengine.schema.json`](worldengine.schema.json).
+- [`docs/IR-v0.1.md`](docs/IR-v0.1.md) — semantic graph contract
+- [`docs/IR-v0.2.md`](docs/IR-v0.2.md) — execution trace, variables and call stack
+- [`docs/IR-v0.3.md`](docs/IR-v0.3.md) — multi-view program model and multiple scenarios
 
 ## Design principle
 
-WorldEngine should show **meaning before syntax**.
+WorldEngine shows **meaning before syntax**.
 
-A large source file should not become one giant flat flowchart. The analyzer should compress related statements into semantic steps and use nested subgraphs for large branches, functions, modules and phases. The first view should normally contain roughly 5–20 meaningful blocks, with detail available progressively.
+A large source base should not become one giant flat flowchart. The analyzer should compress related statements into semantic steps and use nested subgraphs for deeper logic. The first Control Flow screen should normally expose roughly 5–20 meaningful blocks.
 
-The execution trace follows the same rule: it should visualize meaningful runtime transitions, not every trivial machine-level operation.
+v0.3 also avoids forcing every type of program relationship into Control Flow:
+
+- **Control Flow** — what executes next;
+- **Call Graph** — who calls whom;
+- **Data Flow** — where important values come from and go;
+- **Async / Concurrency** — tasks, waits, resumes and parallel relationships;
+- **Execution Scenarios** — concrete runtime paths through possible logic.
 
 ## Logic coverage and current limits
 
-WorldEngine v0.2 can represent normal structured control flow well: sequential work, decisions, loops/back edges, nested branches, functions/subgraphs, external calls, returns, errors, runtime variables and call stacks.
+Structured application logic is represented well, including sequence, decisions, loops/back edges, nested branches, functions/subgraphs, external calls, returns, errors, runtime variables and call stacks.
 
-It is **not yet a universal 100% representation of every possible program behavior**. Important cases that need richer IR/view support include:
+WorldEngine still does **not** claim a mathematically complete representation of every possible program behavior. Areas that need richer semantics/layouts include:
 
-- multiple named entry/exit ports from one subgraph;
-- exception propagation across several call levels;
-- async/await scheduling and event-loop causality;
-- callbacks, promises and event-driven flows with many possible continuations;
-- threads, locks, races and true concurrent execution;
-- recursion visualization beyond a simple call-stack snapshot;
-- dynamic dispatch, reflection, generated code and runtime-loaded modules;
-- preprocessor/macros/templates/metaprogramming where source structure differs from runtime structure;
-- explicit data-flow/dependency graphs in addition to control flow;
-- multiple execution scenarios and coverage comparison rather than one trace path.
+- named multiple entry/exit ports on complex subgraphs;
+- exception propagation across call levels;
+- event-loop causality and complex callback/promise graphs;
+- true concurrency scheduling, locks, channels, races and happens-before relationships;
+- recursive call-tree visualization;
+- dynamic dispatch, reflection and runtime-loaded code;
+- generated/macros/templates where source and runtime structure diverge;
+- synchronized cross-view focus and coverage comparison across scenarios.
 
-The long-term goal is not to force all of these into one giant flowchart. The engine should expose multiple coordinated views (semantic control flow, call graph, data flow, execution scenarios, concurrency lanes) while keeping the first view compact.
+The v0.3 Async / Concurrency view is intentionally a semantic graph foundation. Specialized lane/timeline layouts will be needed for deep concurrent analysis.
 
 ## Repository layout
 
 ```text
-index.html                    App shell
-styles.css                    Base visual system
-runtime.css                   Execution/runtime visuals
-ui-enhancements.css           Theme, readability, branch colors, collapse controls
-src/zip-loader.js             Local ZIP/package reader
-src/engine.js                 Graph layout + renderer + interaction
-src/execution-engine.js       Execution highlighting bridge
-src/execution-player.js       Trace playback + variables + call stack
-src/ui-enhancements.js        Theme toggle + semantic edges + expanded-group controls
-src/app.js                    UI wiring
-src/sample-data.js            Built-in runtime demo
-worldengine.schema.json       IR schema
-docs/IR-v0.1.md               Semantic graph contract
-docs/IR-v0.2.md               Runtime execution extension
+index.html                         App shell
+styles.css                         Base visual system
+runtime.css                        Execution/runtime visuals
+ui-enhancements.css                Theme, readability and branch colors
+multiview.css                      Multi-view tabs and view-specific styles
+scenario.css                       Scenario selector styles
+src/zip-loader.js                  v0.1–v0.3 ZIP/package reader
+src/engine.js                      Graph layout + renderer + interaction
+src/execution-engine.js            Runtime highlighting bridge
+src/execution-player.js            Trace playback + variables + call stack
+src/ui-enhancements.js             Theme + semantic edges + collapse controls
+src/multiview.js                   v0.3 view controller
+src/scenario-enhancements.js       Multiple execution scenarios
+src/sample-data.js                 Base runtime demo
+src/sample-v03.js                  Four-view / multi-scenario demo extension
+src/app.js                         UI wiring
+docs/IR-v0.3.md                    v0.3 contract
 ```
 
 ## Keyboard
