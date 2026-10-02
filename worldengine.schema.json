@@ -6,21 +6,15 @@
   "required": ["nodes", "edges"],
   "properties": {
     "version": { "type": "string" },
-    "type": { "type": "string" },
+    "id": { "type": "string" },
+    "type": {
+      "type": "string",
+      "examples": ["control-flow", "call-graph", "data-flow", "async-concurrency"]
+    },
     "title": { "type": "string" },
     "description": { "type": "string" },
     "entryNode": { "type": "string" },
-    "program": {
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "title": { "type": "string" },
-        "summary": { "type": "string" },
-        "language": { "type": "string" },
-        "entryPoint": { "type": "string" }
-      },
-      "additionalProperties": true
-    },
+    "program": { "$ref": "#/$defs/program" },
     "nodes": {
       "type": "array",
       "items": { "$ref": "#/$defs/node" }
@@ -37,17 +31,71 @@
     "annotations": {
       "type": "array",
       "items": { "type": "object", "additionalProperties": true }
-    }
+    },
+    "metadata": { "$ref": "#/$defs/analysisMetadata" }
   },
   "additionalProperties": true,
   "$defs": {
+    "program": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "summary": { "type": "string" },
+        "language": { "type": "string" },
+        "entryPoint": { "type": "string" },
+        "repository": { "type": "string" },
+        "revision": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
     "sourceRef": {
       "type": "object",
       "required": ["file"],
       "properties": {
-        "file": { "type": "string" },
+        "file": { "type": "string", "minLength": 1 },
         "startLine": { "type": "integer", "minimum": 1 },
-        "endLine": { "type": "integer", "minimum": 1 }
+        "endLine": { "type": "integer", "minimum": 1 },
+        "symbol": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "certainty": {
+      "type": "string",
+      "enum": ["observed", "inferred", "runtime", "possible", "unknown"]
+    },
+    "provenance": {
+      "type": "string",
+      "enum": ["source", "observed-runtime", "unit-test", "static-simulation", "user-provided", "partial"]
+    },
+    "analysisMetadata": {
+      "type": "object",
+      "properties": {
+        "semanticId": { "type": "string", "minLength": 1 },
+        "certainty": { "$ref": "#/$defs/certainty" },
+        "provenance": { "$ref": "#/$defs/provenance" },
+        "symbol": { "type": "string" },
+        "qualifiedName": { "type": "string" },
+        "executionContext": { "type": "string" },
+        "lane": { "type": "string" },
+        "evidence": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/sourceRef" }
+        },
+        "callSite": { "$ref": "#/$defs/sourceRef" },
+        "candidateTargets": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "synchronization": {
+          "type": "object",
+          "properties": {
+            "kind": { "type": "string" },
+            "resource": { "type": "string" }
+          },
+          "additionalProperties": true
+        }
       },
       "additionalProperties": true
     },
@@ -58,9 +106,9 @@
         "id": { "type": "string", "minLength": 1 },
         "type": {
           "type": "string",
-          "examples": ["start", "process", "decision", "subgraph", "function", "data", "value", "async", "await", "task", "thread", "external", "call", "return", "error", "end"]
+          "examples": ["start", "process", "decision", "subgraph", "group", "function", "data", "value", "async", "await", "task", "thread", "worker", "external", "call", "return", "error", "end"]
         },
-        "label": { "type": "string" },
+        "label": { "type": "string", "minLength": 1 },
         "summary": { "type": "string" },
         "parent": { "type": "string" },
         "children": {
@@ -77,6 +125,10 @@
         "defaultExpanded": { "type": "boolean" },
         "code": { "type": "string" },
         "source": { "$ref": "#/$defs/sourceRef" },
+        "sources": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/sourceRef" }
+        },
         "note": { "type": "string" },
         "notes": {
           "type": "array",
@@ -91,7 +143,7 @@
           },
           "additionalProperties": true
         },
-        "metadata": { "type": "object", "additionalProperties": true }
+        "metadata": { "$ref": "#/$defs/analysisMetadata" }
       },
       "additionalProperties": true
     },
@@ -100,13 +152,19 @@
       "required": ["from", "to"],
       "properties": {
         "id": { "type": "string" },
-        "from": { "type": "string" },
-        "to": { "type": "string" },
+        "from": { "type": "string", "minLength": 1 },
+        "to": { "type": "string", "minLength": 1 },
         "label": { "type": "string" },
-        "type": { "type": "string" },
-        "relation": { "type": "string" },
+        "type": {
+          "type": "string",
+          "examples": ["control", "back", "loop", "call", "dynamic-call", "data-flow", "read", "write", "spawn", "await", "resume", "join", "message"]
+        },
+        "relation": {
+          "type": "string",
+          "examples": ["true", "false", "case", "default", "loop", "parameter", "return-value"]
+        },
         "note": { "type": "string" },
-        "metadata": { "type": "object", "additionalProperties": true }
+        "metadata": { "$ref": "#/$defs/analysisMetadata" }
       },
       "additionalProperties": true
     },
@@ -121,7 +179,8 @@
             "file": { "type": "string" },
             "line": { "type": "integer", "minimum": 1 },
             "node": { "type": "string" },
-            "args": { "type": "object", "additionalProperties": true }
+            "args": { "type": "object", "additionalProperties": true },
+            "metadata": { "$ref": "#/$defs/analysisMetadata" }
           },
           "additionalProperties": true
         }
@@ -132,7 +191,10 @@
       "properties": {
         "node": { "type": "string" },
         "edge": { "type": "string" },
-        "event": { "type": "string" },
+        "event": {
+          "type": "string",
+          "examples": ["enter", "process", "branch", "call", "return", "error", "await", "resume", "spawn", "join", "message", "read", "write"]
+        },
         "type": { "type": "string" },
         "label": { "type": "string" },
         "message": { "type": "string" },
@@ -148,7 +210,7 @@
           "type": "array",
           "items": { "$ref": "#/$defs/stackFrame" }
         },
-        "metadata": { "type": "object", "additionalProperties": true }
+        "metadata": { "$ref": "#/$defs/analysisMetadata" }
       },
       "additionalProperties": true
     },
@@ -156,14 +218,16 @@
       "type": "object",
       "required": ["trace"],
       "properties": {
-        "id": { "type": "string" },
+        "id": { "type": "string", "minLength": 1 },
         "title": { "type": "string" },
         "description": { "type": "string" },
         "view": { "type": "string" },
+        "inputs": { "type": "object", "additionalProperties": true },
         "trace": {
           "type": "array",
           "items": { "$ref": "#/$defs/executionStep" }
-        }
+        },
+        "metadata": { "$ref": "#/$defs/analysisMetadata" }
       },
       "additionalProperties": true
     },
@@ -180,7 +244,8 @@
             "trace": {
               "type": "array",
               "items": { "$ref": "#/$defs/executionStep" }
-            }
+            },
+            "metadata": { "$ref": "#/$defs/analysisMetadata" }
           }
         },
         {
@@ -189,7 +254,8 @@
             "scenarios": {
               "type": "array",
               "items": { "$ref": "#/$defs/scenario" }
-            }
+            },
+            "metadata": { "$ref": "#/$defs/analysisMetadata" }
           }
         }
       ],
@@ -205,8 +271,11 @@
             "type": { "type": "string" },
             "title": { "type": "string" },
             "description": { "type": "string" },
+            "program": { "$ref": "#/$defs/program" },
+            "entryNode": { "type": "string" },
             "nodes": { "type": "array", "items": { "$ref": "#/$defs/node" } },
-            "edges": { "type": "array", "items": { "$ref": "#/$defs/edge" } }
+            "edges": { "type": "array", "items": { "$ref": "#/$defs/edge" } },
+            "metadata": { "$ref": "#/$defs/analysisMetadata" }
           },
           "additionalProperties": true
         },
@@ -222,8 +291,11 @@
               "type": "object",
               "required": ["nodes", "edges"],
               "properties": {
+                "program": { "$ref": "#/$defs/program" },
+                "entryNode": { "type": "string" },
                 "nodes": { "type": "array", "items": { "$ref": "#/$defs/node" } },
-                "edges": { "type": "array", "items": { "$ref": "#/$defs/edge" } }
+                "edges": { "type": "array", "items": { "$ref": "#/$defs/edge" } },
+                "metadata": { "$ref": "#/$defs/analysisMetadata" }
               },
               "additionalProperties": true
             }
