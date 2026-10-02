@@ -35,6 +35,10 @@
     dropOverlay.hidden = true;
   }
 
+  function fitExplicitly() {
+    engine.fit({ explicit: true });
+  }
+
   function showPackage(pkg, label) {
     hideDropOverlay();
     WE.validateGraph(pkg.graph);
@@ -79,7 +83,7 @@
 
   $('zoomInBtn').addEventListener('click', () => engine.zoomBy(1.18));
   $('zoomOutBtn').addEventListener('click', () => engine.zoomBy(0.84));
-  $('fitBtn').addEventListener('click', () => engine.fit());
+  $('fitBtn').addEventListener('click', fitExplicitly);
 
   function isFileDrag(event) {
     const types = event.dataTransfer && event.dataTransfer.types;
@@ -123,7 +127,7 @@
 
     if ((event.ctrlKey || event.metaKey) && event.key === '0') {
       event.preventDefault();
-      engine.fit();
+      fitExplicitly();
       return;
     }
 
