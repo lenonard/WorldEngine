@@ -1,0 +1,34 @@
+{
+  "version": "0.1",
+  "program": {
+    "title": "Find active users",
+    "summary": "Filters a list and returns only active users.",
+    "language": "JavaScript",
+    "entryPoint": "findActiveUsers()"
+  },
+  "nodes": [
+    {
+      "id": "start",
+      "type": "start",
+      "label": "Receive users",
+      "source": { "file": "source/main.js", "startLine": 1, "endLine": 1 }
+    },
+    {
+      "id": "filter",
+      "type": "process",
+      "label": "Filter active users",
+      "summary": "Keep users whose active flag is true.",
+      "source": { "file": "source/main.js", "startLine": 2, "endLine": 2 }
+    },
+    {
+      "id": "return",
+      "type": "return",
+      "label": "Return result",
+      "source": { "file": "source/main.js", "startLine": 3, "endLine": 3 }
+    }
+  ],
+  "edges": [
+    { "from": "start", "to": "filter" },
+    { "from": "filter", "to": "return" }
+  ]
+}
