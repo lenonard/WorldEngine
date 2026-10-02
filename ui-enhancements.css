@@ -144,3 +144,11 @@ body[data-theme="light"] .collapse-all-chip { background: rgba(255,255,255,.94);
   .workspace { grid-template-columns: 230px minmax(0,1fr); }
   .detail-panel { width: 360px; }
 }
+
+@media (max-width: 720px) {
+  .workspace { grid-template-columns: 1fr; }
+  .detail-panel { width: min(92vw, 380px); }
+  .theme-toggle { min-width: 38px; width: 38px; padding: 0; overflow: hidden; font-size: 0; }
+  .theme-toggle::first-letter { font-size: 16px; }
+  .expanded-groups { top: 10px; left: 10px; max-width: calc(100% - 20px); }
+}
