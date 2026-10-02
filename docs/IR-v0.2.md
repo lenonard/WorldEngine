@@ -37,6 +37,37 @@ Nodes and edges keep the v0.1 contract. The analyzer should continue to optimize
 
 A large source base should normally show about 5–20 meaningful blocks on the first screen, with deeper logic represented by nested `subgraph` / `group` nodes.
 
+### Decision branch semantics
+
+For decision edges, prefer an explicit semantic `relation` instead of relying only on a human-readable label:
+
+```json
+{
+  "id": "valid-yes",
+  "from": "valid",
+  "to": "process",
+  "label": "Yes",
+  "relation": "true"
+}
+```
+
+```json
+{
+  "id": "valid-no",
+  "from": "valid",
+  "to": "reject",
+  "label": "No",
+  "relation": "false"
+}
+```
+
+The renderer uses these semantics for immediate visual recognition:
+
+- `relation: "true"` → green branch;
+- `relation: "false"` → red branch.
+
+For compatibility, common labels such as `True`, `False`, `Yes`, `No`, `Success`, `Fail`, `Valid` and `Invalid` are also recognized, but generated WorldEngine packages should prefer explicit `relation` values.
+
 ## Execution object
 
 Minimal `execution.json`:
