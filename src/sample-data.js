@@ -1,12 +1,13 @@
 window.WorldEngineSample = {
   manifest: {
     format: "worldengine-package",
-    version: "0.1",
+    version: "0.2",
     graph: "graph.json",
+    execution: "execution.json",
     sourceRoot: "source/"
   },
   graph: {
-    version: "0.1",
+    version: "0.2",
     program: {
       id: "checkout-demo",
       title: "Checkout order",
@@ -38,6 +39,98 @@ window.WorldEngineSample = {
       { "id": "p2", "from": "payment-method", "to": "wallet-charge", "label": "Wallet" },
       { "id": "p3", "from": "card-charge", "to": "payment-result" },
       { "id": "p4", "from": "wallet-charge", "to": "payment-result" }
+    ]
+  },
+  execution: {
+    id: "happy-path-card",
+    title: "Successful card checkout",
+    trace: [
+      {
+        "node": "start",
+        "event": "enter",
+        "label": "Nhận checkout request",
+        "message": "Bắt đầu chạy checkout() với một đơn hàng thanh toán bằng thẻ.",
+        "variablesSnapshot": true,
+        "variables": { "orderId": "ORD-1042", "paymentMethod": "card", "total": 0 },
+        "callStack": [
+          { "name": "checkout", "file": "source/checkout.js", "line": 1 }
+        ]
+      },
+      {
+        "node": "validate",
+        "edge": "e1",
+        "event": "process",
+        "label": "Tính tổng và validate",
+        "variables": { "total": 125, "errors": [] },
+        "callStack": [
+          { "name": "checkout", "file": "source/checkout.js", "line": 4 }
+        ]
+      },
+      {
+        "node": "valid",
+        "edge": "e2",
+        "event": "branch",
+        "label": "Kiểm tra kết quả validation",
+        "message": "valid = true nên đi theo nhánh Yes.",
+        "variables": { "valid": true },
+        "callStack": [
+          { "name": "checkout", "file": "source/checkout.js", "line": 9 }
+        ]
+      },
+      {
+        "node": "payment-method",
+        "edge": "e4",
+        "event": "branch",
+        "label": "Chọn payment provider",
+        "message": "paymentMethod = card. Subgraph thanh toán có thể mở ra để xem chi tiết.",
+        "callStack": [
+          { "name": "checkout", "file": "source/checkout.js", "line": 14 }
+        ]
+      },
+      {
+        "node": "card-charge",
+        "edge": "p1",
+        "event": "call",
+        "label": "Gọi card gateway",
+        "message": "Chờ cardGateway.charge(total).",
+        "variables": { "chargeAmount": 125 },
+        "callStack": [
+          { "name": "checkout", "file": "source/checkout.js", "line": 15 },
+          { "name": "cardGateway.charge", "line": 1 }
+        ]
+      },
+      {
+        "node": "payment-result",
+        "edge": "p3",
+        "event": "return",
+        "label": "Chuẩn hóa payment result",
+        "variables": { "paymentStatus": "paid", "transactionId": "TX-9007" },
+        "variablesRemoved": ["chargeAmount"],
+        "callStack": [
+          { "name": "checkout", "file": "source/checkout.js", "line": 22 }
+        ]
+      },
+      {
+        "node": "save",
+        "edge": "e5",
+        "event": "process",
+        "label": "Lưu order và transaction",
+        "message": "Hai thao tác database được gom thành một bước ngữ nghĩa.",
+        "variables": { "persisted": true },
+        "callStack": [
+          { "name": "checkout", "file": "source/checkout.js", "line": 24 }
+        ]
+      },
+      {
+        "node": "done",
+        "edge": "e6",
+        "event": "return",
+        "label": "Trả kết quả thành công",
+        "variables": { "ok": true },
+        "callStack": [
+          { "name": "checkout", "file": "source/checkout.js", "line": 27 }
+        ]
+      }
     ]
   },
   sources: {
