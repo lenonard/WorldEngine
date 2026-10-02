@@ -1,0 +1,6 @@
+{
+  "format": "worldengine-package",
+  "version": "0.1",
+  "graph": "graph.json",
+  "sourceRoot": "source/"
+}
