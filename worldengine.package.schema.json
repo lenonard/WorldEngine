@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://worldengine.local/schema/package-v0.3.json",
+  "title": "WorldEngine Package Manifest v0.3",
+  "type": "object",
+  "required": ["format", "version"],
+  "properties": {
+    "format": {
+      "const": "worldengine-package"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^0\\.3(?:\\..*)?$"
+    },
+    "defaultView": {
+      "type": "string",
+      "minLength": 1
+    },
+    "defaultScenario": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceRoot": {
+      "type": "string"
+    },
+    "graph": {
+      "type": "string",
+      "minLength": 1
+    },
+    "execution": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scenarios": {
+      "type": "string",
+      "minLength": 1
+    },
+    "views": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "$ref": "#/$defs/viewEntry"
+      }
+    },
+    "program": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "language": { "type": "string" },
+        "repository": { "type": "string" },
+        "revision": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "anyOf": [
+    { "required": ["views"] },
+    { "required": ["graph"] }
+  ],
+  "additionalProperties": true,
+  "$defs": {
+    "viewEntry": {
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "object",
+          "required": ["path"],
+          "properties": {
+            "path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "control-flow",
+                "call-graph",
+                "data-flow",
+                "async-concurrency"
+              ]
+            },
+            "title": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": true
+        }
+      ]
+    }
+  }
+}
