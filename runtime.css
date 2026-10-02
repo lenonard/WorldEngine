@@ -227,7 +227,11 @@
   .speed-select, .exec-counter { display: none; }
 }
 
+@media (max-width: 1000px) {
+  .detail-panel.runtime-open { transform: translateX(0); }
+}
+
 @media (max-width: 860px) {
   .execution-controls .toolbar-separator,
-  .exec-button:not(#execPlayBtn) { display: none; }
+  .exec-button { display: none; }
 }
