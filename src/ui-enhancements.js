@@ -73,7 +73,7 @@
     const defs = svg && svg.querySelector('defs');
     if (!defs) return;
 
-    const createMarker = (id, className) => {
+    const createMarker = (id, className, fill) => {
       if (defs.querySelector(`#${id}`)) return;
       const ns = 'http://www.w3.org/2000/svg';
       const marker = document.createElementNS(ns, 'marker');
@@ -87,12 +87,13 @@
       const path = document.createElementNS(ns, 'path');
       path.setAttribute('d', 'M0,0 L0,8 L9,4 z');
       path.setAttribute('class', className);
+      path.style.fill = fill;
       marker.appendChild(path);
       defs.appendChild(marker);
     };
 
-    createMarker('arrowTrue', 'arrow-head arrow-head-true');
-    createMarker('arrowFalse', 'arrow-head arrow-head-false');
+    createMarker('arrowTrue', 'arrow-head arrow-head-true', 'var(--edge-true)');
+    createMarker('arrowFalse', 'arrow-head arrow-head-false', 'var(--edge-false)');
   }
 
   function decorateSemanticEdges(engine) {
@@ -106,14 +107,19 @@
     (engine.visibleEdges || []).forEach((edge, index) => {
       const semantic = classifyEdge(edge);
       const path = paths[index];
+      const semanticColor = semantic === 'true' ? 'var(--edge-true)' : semantic === 'false' ? 'var(--edge-false)' : null;
       if (path && semantic) {
         path.classList.add(`edge-${semantic}`);
+        path.style.stroke = semanticColor;
         path.setAttribute('marker-end', semantic === 'true' ? 'url(#arrowTrue)' : 'url(#arrowFalse)');
       }
 
       if (edge && edge.label) {
         const label = labels[labelIndex++];
-        if (label && semantic) label.classList.add(`edge-${semantic}`);
+        if (label && semantic) {
+          label.classList.add(`edge-${semantic}`);
+          label.style.fill = semanticColor;
+        }
       }
     });
   }
