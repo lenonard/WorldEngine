@@ -23,9 +23,26 @@
     });
   }
 
+  function isInsideGroup(engine, nodeId, groupId) {
+    let node = engine.nodesById && engine.nodesById.get(nodeId);
+    const seen = new Set();
+    while (node && node.parent && !seen.has(node.parent)) {
+      if (node.parent === groupId) return true;
+      seen.add(node.parent);
+      node = engine.nodesById.get(node.parent);
+    }
+    return false;
+  }
+
   function collapseGroup(engine, id) {
     if (!engine || !engine.expanded || !engine.expanded.has(id)) return false;
-    engine.expanded.delete(id);
+
+    for (const expandedId of [...engine.expanded]) {
+      if (expandedId === id || isInsideGroup(engine, expandedId, id)) {
+        engine.expanded.delete(expandedId);
+      }
+    }
+
     engine.selectedId = null;
     engine.render();
     requestAnimationFrame(() => {
