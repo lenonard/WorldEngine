@@ -26,6 +26,22 @@
         <button id="zoomOutBtn" class="icon-button" title="Zoom out">−</button>
         <button id="zoomInBtn" class="icon-button" title="Zoom in">+</button>
         <button id="fitBtn" class="button">Fit</button>
+
+        <div id="executionControls" class="execution-controls" hidden>
+          <span class="toolbar-separator"></span>
+          <button id="execResetBtn" class="icon-button exec-button" title="Reset execution">↺</button>
+          <button id="execPrevBtn" class="icon-button exec-button" title="Previous step">‹</button>
+          <button id="execPlayBtn" class="icon-button exec-play" title="Play execution">▶</button>
+          <button id="execNextBtn" class="icon-button exec-button" title="Next step">›</button>
+          <select id="execSpeed" class="speed-select" title="Playback speed">
+            <option value="0.5">0.5×</option>
+            <option value="1" selected>1×</option>
+            <option value="1.5">1.5×</option>
+            <option value="2">2×</option>
+            <option value="3">3×</option>
+          </select>
+          <span id="execToolbarCounter" class="exec-counter"></span>
+        </div>
       </div>
     </header>
 
@@ -55,6 +71,11 @@
           <strong>Navigation</strong>
           <p>Drag canvas to pan. Scroll to zoom. Click a block for details. Double-click a subgraph to expand/collapse.</p>
         </section>
+
+        <section class="help-card">
+          <strong>Execution</strong>
+          <p>Space: play/pause. ← / →: previous/next trace step. Active blocks and transitions animate when a package contains an execution trace.</p>
+        </section>
       </aside>
 
       <section id="canvas" class="canvas" aria-label="WorldEngine graph canvas">
@@ -82,6 +103,32 @@
       </section>
 
       <aside class="sidebar detail-panel">
+        <section id="runtimePanel" class="runtime-panel" hidden>
+          <div class="runtime-heading">
+            <div class="section-kicker">EXECUTION TRACE</div>
+            <span id="runtimeEvent" class="runtime-event">step</span>
+          </div>
+
+          <div class="runtime-step-row">
+            <strong id="runtimeStepLabel">Ready</strong>
+            <span id="runtimeStepCounter">0 / 0</span>
+          </div>
+          <p id="runtimeMessage" class="runtime-message"></p>
+          <input id="traceSlider" class="trace-slider" type="range" min="0" max="0" value="0" />
+
+          <div class="runtime-section">
+            <div class="section-title">Variables</div>
+            <div id="runtimeVariables" class="runtime-variables"></div>
+          </div>
+
+          <div class="runtime-section">
+            <div class="section-title">Call Stack</div>
+            <div id="runtimeCallStack" class="runtime-stack"></div>
+          </div>
+        </section>
+
+        <div id="runtimeDivider" class="detail-divider" hidden></div>
+
         <div class="section-kicker">DETAILS</div>
         <div id="detailEmpty" class="detail-empty">Select a block to inspect its meaning, source and connections.</div>
         <div id="detailContent" hidden>
@@ -120,6 +167,8 @@
   <script src="src/sample-data.js"></script>
   <script src="src/zip-loader.js"></script>
   <script src="src/engine.js"></script>
+  <script src="src/execution-engine.js"></script>
+  <script src="src/execution-player.js"></script>
   <script src="src/app.js"></script>
 </body>
 </html>
