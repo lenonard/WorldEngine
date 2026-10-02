@@ -8,6 +8,8 @@
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="runtime.css" />
   <link rel="stylesheet" href="ui-enhancements.css" />
+  <link rel="stylesheet" href="multiview.css" />
+  <link rel="stylesheet" href="scenario.css" />
 </head>
 <body>
   <div class="app-shell">
@@ -75,8 +77,13 @@
         </section>
 
         <section class="help-card">
+          <strong>Views</strong>
+          <p>WorldEngine v0.3 can switch between Control Flow, Call Graph, Data Flow and Async / Concurrency when the package provides those views.</p>
+        </section>
+
+        <section class="help-card">
           <strong>Execution</strong>
-          <p>Space: play/pause. ← / →: previous/next trace step. Active blocks and transitions animate when a package contains an execution trace.</p>
+          <p>Space: play/pause. ← / →: previous/next trace step. Packages can provide multiple execution scenarios.</p>
         </section>
       </aside>
 
@@ -167,11 +174,14 @@
 
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <script src="src/sample-data.js"></script>
+  <script src="src/sample-v03.js"></script>
   <script src="src/zip-loader.js"></script>
   <script src="src/engine.js"></script>
   <script src="src/execution-engine.js"></script>
+  <script src="src/multiview.js"></script>
   <script src="src/ui-enhancements.js"></script>
   <script src="src/execution-player.js"></script>
+  <script src="src/scenario-enhancements.js"></script>
   <script src="src/app.js"></script>
 </body>
 </html>
