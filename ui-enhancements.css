@@ -1,0 +1,146 @@
+/* WorldEngine UI enhancements: themes, semantic edges, expanded-group controls, readability */
+
+:root {
+  --edge-true: #43d39e;
+  --edge-false: #ff6b7a;
+  --edge-neutral: #4b5c7d;
+}
+
+/* Larger readable runtime/detail typography */
+.workspace { grid-template-columns: 260px minmax(0,1fr) 360px; }
+.sidebar { font-size: 14px; }
+.section-kicker { font-size: 11px; }
+.section-title { font-size: 12px; }
+.muted { font-size: 14px; }
+.detail-type { font-size: 10px; }
+.detail-empty { font-size: 14px; }
+.source-ref { font-size: 11px; }
+.code-block { font-size: 13px; line-height: 1.62; max-height: 320px; }
+.notes { font-size: 13px; }
+.connection { font-size: 12px; }
+
+.runtime-event { font-size: 10px; padding: 5px 8px; }
+.runtime-step-row strong { font-size: 15px; }
+.runtime-step-row span { font-size: 12px; }
+.runtime-message { font-size: 13px; line-height: 1.55; }
+.runtime-empty { font-size: 12px; }
+.runtime-variable { grid-template-columns: minmax(92px,.8fr) minmax(0,1.2fr); padding: 9px 10px; }
+.runtime-variable-name { font-size: 12px; }
+.runtime-variable code { font-size: 12px; overflow: visible; white-space: normal; word-break: break-word; }
+.stack-index { font-size: 10px; }
+.stack-frame { padding: 9px 10px; }
+.stack-frame strong { font-size: 12px; }
+.stack-frame small { font-size: 11px; }
+.exec-counter { font-size: 12px; }
+
+/* Semantic decision edges */
+.edge.edge-true { stroke: var(--edge-true); stroke-width: 2.7; }
+.edge.edge-false { stroke: var(--edge-false); stroke-width: 2.7; }
+.edge-label.edge-true { fill: var(--edge-true); font-weight: 800; }
+.edge-label.edge-false { fill: var(--edge-false); font-weight: 800; }
+.edge.edge-true.exec-active,
+.edge.edge-false.exec-active { stroke: #5eead4; }
+
+/* Expanded subgraph controls stay visible even when parent block is replaced by children. */
+.expanded-groups {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 12;
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  flex-wrap: wrap;
+  max-width: calc(100% - 28px);
+  pointer-events: auto;
+}
+.expanded-groups[hidden] { display: none !important; }
+.expanded-groups-label {
+  padding: 6px 8px;
+  color: #8191ad;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-weight: 800;
+  background: rgba(11,16,32,.78);
+  border: 1px solid #2d3a55;
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+}
+.expanded-group-chip,
+.collapse-all-chip {
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid rgba(155,123,255,.5);
+  background: rgba(33,28,66,.9);
+  color: #d9d0ff;
+  padding: 0 10px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 750;
+  box-shadow: 0 6px 18px rgba(0,0,0,.18);
+}
+.expanded-group-chip:hover,
+.collapse-all-chip:hover { border-color: #b7a2ff; background: rgba(51,42,94,.96); }
+.expanded-group-chip strong { color: #fff; margin-right: 5px; }
+.collapse-all-chip { color: #b9c7dc; border-color: #3b4965; background: rgba(17,24,43,.9); }
+
+/* Theme switch button */
+.theme-toggle { min-width: 72px; }
+
+/* Light theme */
+body[data-theme="light"] {
+  --bg: #eef2f8;
+  --panel: #ffffff;
+  --panel-2: #f4f7fb;
+  --line: #d8e0eb;
+  --text: #182033;
+  --muted: #65738b;
+  --shadow: 0 18px 48px rgba(36,47,69,.14);
+  --edge-neutral: #8b9bb3;
+  background: var(--bg);
+  color: var(--text);
+}
+body[data-theme="light"] .topbar { background: rgba(255,255,255,.94); }
+body[data-theme="light"] .button,
+body[data-theme="light"] .icon-button,
+body[data-theme="light"] .speed-select { background: #f5f8fc; color: #28344a; border-color: #d5deea; }
+body[data-theme="light"] .button:hover,
+body[data-theme="light"] .icon-button:hover { background: #eaf0f8; border-color: #b8c6da; }
+body[data-theme="light"] .button.primary { background: #5f7ff1; border-color: #5f7ff1; color: #fff; }
+body[data-theme="light"] .sidebar { background: #fff; }
+body[data-theme="light"] .canvas {
+  background-color: #f4f7fb;
+  background-image: radial-gradient(circle at 1px 1px, rgba(73,91,122,.14) 1px, transparent 1px);
+}
+body[data-theme="light"] .node { background: #fff; border-color: #cbd6e5; box-shadow: 0 12px 28px rgba(55,70,98,.12); }
+body[data-theme="light"] .node.type-subgraph,
+body[data-theme="light"] .node.type-group { background: #f6f3ff; }
+body[data-theme="light"] .node-label { color: #1d2940; }
+body[data-theme="light"] .node-summary,
+body[data-theme="light"] .node-type,
+body[data-theme="light"] .node-pill { color: #64738c; }
+body[data-theme="light"] .node-pill { background: #f5f7fb; border-color: #dbe2ec; }
+body[data-theme="light"] .edge { stroke: #8b9bb3; }
+body[data-theme="light"] .arrow-head { fill: #8b9bb3; }
+body[data-theme="light"] .edge-label { stroke: #f4f7fb; fill: #5e6f89; }
+body[data-theme="light"] .help-card,
+body[data-theme="light"] .stat,
+body[data-theme="light"] .runtime-variable,
+body[data-theme="light"] .stack-frame,
+body[data-theme="light"] .connection,
+body[data-theme="light"] .notes > div { background: #f7f9fc; border-color: #dce3ed; color: #56667f; }
+body[data-theme="light"] .code-block { background: #f5f7fa; color: #243149; border-color: #d8e0ea; }
+body[data-theme="light"] .runtime-variable.changed { background: #eafaf4; border-color: #8bd8bd; }
+body[data-theme="light"] .stack-frame.current { background: #eef2ff; border-color: #aebdf4; }
+body[data-theme="light"] .statusbar { background: #e8edf5; border-color: #d3dce8; color: #63718a; }
+body[data-theme="light"] .drop-overlay { background: rgba(245,248,252,.94); color: #344666; }
+body[data-theme="light"] .expanded-groups-label { background: rgba(255,255,255,.9); color: #687790; border-color: #d6dfeb; }
+body[data-theme="light"] .expanded-group-chip { background: rgba(245,241,255,.96); color: #604db0; border-color: #c4b8f1; }
+body[data-theme="light"] .expanded-group-chip strong { color: #44348d; }
+body[data-theme="light"] .collapse-all-chip { background: rgba(255,255,255,.94); color: #607089; border-color: #d4ddea; }
+
+@media (max-width: 1100px) {
+  .workspace { grid-template-columns: 230px minmax(0,1fr); }
+  .detail-panel { width: 360px; }
+}
