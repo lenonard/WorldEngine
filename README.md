@@ -2,8 +2,6 @@
 
 WorldEngine turns a semantic program description into an interactive visual graph in the browser.
 
-The intended workflow is:
-
 ```text
 Source code
    ↓
@@ -14,6 +12,8 @@ WorldEngine IR package (.zip)
 WorldEngine web UI
    ↓
 Blocks · connections · colors · notes · source references
+   ↓
+Optional execution trace · variables · call stack · animation
 ```
 
 The browser renderer does **not** parse programming languages. It renders a language-independent IR produced after the source has been understood.
@@ -30,13 +30,19 @@ The browser renderer does **not** parse programming languages. It renders a lang
 - Detail panel with summary, notes, source references and source snippets.
 - Hierarchical `subgraph` / `group` blocks.
 - Double-click a subgraph to expand/collapse it.
-- Built-in sample graph.
+- Optional execution trace playback.
+- Play / pause / previous / next / reset / speed controls.
+- Animated active block and transition.
+- Runtime variables with changed-value highlighting.
+- Call-stack inspector.
+- Trace timeline slider.
+- Built-in runtime sample.
 
 ## Run
 
 For the simplest local test, open `index.html` in a modern browser.
 
-You can also serve the directory with any static HTTP server, for example:
+Recommended local server:
 
 ```bash
 python -m http.server 8080
@@ -46,7 +52,33 @@ Then open `http://localhost:8080`.
 
 > ZIP support currently loads JSZip 3.10.1 from jsDelivr. The built-in sample works without opening a ZIP.
 
-## WorldEngine ZIP format v0.1
+## Install once, update with Git
+
+Instead of downloading the GitHub source ZIP after every change, clone the repository once:
+
+```bash
+git clone https://github.com/lenonard/WorldEngine.git
+cd WorldEngine
+```
+
+After later updates, run only:
+
+```bash
+git pull origin main
+```
+
+If you have local changes you want to keep:
+
+```bash
+git status
+git stash -u
+git pull --rebase origin main
+git stash pop
+```
+
+This downloads only Git changes, not a new full source ZIP every time.
+
+## WorldEngine ZIP format v0.2
 
 Recommended package structure:
 
@@ -54,6 +86,7 @@ Recommended package structure:
 my-analysis.zip
 ├── manifest.json
 ├── graph.json
+├── execution.json       # optional
 └── source/
     ├── main.js
     └── payment.js
@@ -64,17 +97,20 @@ Minimal `manifest.json`:
 ```json
 {
   "format": "worldengine-package",
-  "version": "0.1",
+  "version": "0.2",
   "graph": "graph.json",
+  "execution": "execution.json",
   "sourceRoot": "source/"
 }
 ```
+
+`execution.json` is optional. v0.1 graph-only packages still render.
 
 Minimal `graph.json`:
 
 ```json
 {
-  "version": "0.1",
+  "version": "0.2",
   "program": {
     "title": "Example",
     "summary": "What the program does",
@@ -82,31 +118,45 @@ Minimal `graph.json`:
     "entryPoint": "main()"
   },
   "nodes": [
-    {
-      "id": "start",
-      "type": "start",
-      "label": "Start"
-    },
-    {
-      "id": "work",
-      "type": "process",
-      "label": "Process input",
-      "summary": "Semantic meaning of this block"
-    },
-    {
-      "id": "done",
-      "type": "return",
-      "label": "Return result"
-    }
+    { "id": "start", "type": "start", "label": "Start" },
+    { "id": "work", "type": "process", "label": "Process input" },
+    { "id": "done", "type": "return", "label": "Return result" }
   ],
   "edges": [
-    { "from": "start", "to": "work" },
-    { "from": "work", "to": "done" }
+    { "id": "e1", "from": "start", "to": "work" },
+    { "id": "e2", "from": "work", "to": "done" }
   ]
 }
 ```
 
-See [`docs/IR-v0.1.md`](docs/IR-v0.1.md) for hierarchy, source references and semantic authoring rules. A machine-readable core schema is in [`worldengine.schema.json`](worldengine.schema.json).
+Minimal `execution.json`:
+
+```json
+{
+  "trace": [
+    {
+      "node": "start",
+      "event": "enter",
+      "variablesSnapshot": true,
+      "variables": { "input": 3 },
+      "callStack": [{ "name": "main", "file": "source/main.js", "line": 1 }]
+    },
+    {
+      "node": "work",
+      "edge": "e1",
+      "event": "process",
+      "variables": { "result": 6 }
+    },
+    {
+      "node": "done",
+      "edge": "e2",
+      "event": "return"
+    }
+  ]
+}
+```
+
+See [`docs/IR-v0.2.md`](docs/IR-v0.2.md) for execution traces, variables and call stacks. The original graph contract remains documented in [`docs/IR-v0.1.md`](docs/IR-v0.1.md). A machine-readable schema is in [`worldengine.schema.json`](worldengine.schema.json).
 
 ## Design principle
 
@@ -114,19 +164,33 @@ WorldEngine should show **meaning before syntax**.
 
 A large source file should not become one giant flat flowchart. The analyzer should compress related statements into semantic steps and use nested subgraphs for large branches, functions, modules and phases. The first view should normally contain roughly 5–20 meaningful blocks, with detail available progressively.
 
+The execution trace follows the same rule: it should visualize meaningful runtime transitions, not every trivial machine-level operation.
+
 ## Repository layout
 
 ```text
-index.html              App shell
-styles.css              Visual system
-src/zip-loader.js       Local ZIP/package reader
-src/engine.js           Graph layout + renderer + interaction
-src/app.js              UI wiring
-src/sample-data.js      Built-in demo
-worldengine.schema.json Core IR schema
-docs/IR-v0.1.md         IR contract and authoring rules
+index.html                    App shell
+styles.css                    Base visual system
+runtime.css                   Execution/runtime visuals
+src/zip-loader.js             Local ZIP/package reader
+src/engine.js                 Graph layout + renderer + interaction
+src/execution-engine.js       Execution highlighting bridge
+src/execution-player.js       Trace playback + variables + call stack
+src/app.js                    UI wiring
+src/sample-data.js            Built-in runtime demo
+worldengine.schema.json       IR schema
+docs/IR-v0.1.md               Semantic graph contract
+docs/IR-v0.2.md               Runtime execution extension
 ```
 
-## Next milestones
+## Keyboard
 
-The v0.1 renderer establishes the data contract and navigation model. Natural next layers are execution traces, variable state, call stack/timeline playback, richer edge routing/bundling, and multiple views such as architecture, call graph, control flow and data flow.
+When an execution trace is loaded:
+
+```text
+Space        Play / pause
+←            Previous step
+→            Next step
+Esc          Pause + clear graph selection
+Ctrl/Cmd + 0 Fit graph
+```
