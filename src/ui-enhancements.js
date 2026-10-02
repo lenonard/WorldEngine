@@ -15,6 +15,26 @@
     return host;
   }
 
+  function stopCanvasGesture(element) {
+    ['pointerdown', 'mousedown', 'touchstart'].forEach(type => {
+      element.addEventListener(type, event => {
+        event.stopPropagation();
+      }, { passive: true });
+    });
+  }
+
+  function collapseGroup(engine, id) {
+    if (!engine || !engine.expanded || !engine.expanded.has(id)) return false;
+    engine.expanded.delete(id);
+    engine.selectedId = null;
+    engine.render();
+    requestAnimationFrame(() => {
+      renderExpandedGroups(engine);
+      engine.fit();
+    });
+    return true;
+  }
+
   function renderExpandedGroups(engine) {
     const host = ensureExpandedGroupsContainer(engine);
     const ids = [...(engine.expanded || [])].filter(id => engine.nodesById && engine.nodesById.has(id));
@@ -32,11 +52,14 @@
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'expanded-group-chip';
+      button.dataset.groupId = id;
       button.title = `Collapse ${node && (node.label || node.id) || id}`;
       button.innerHTML = `<strong>−</strong>${escapeHtml(node && (node.label || node.id) || id)}`;
+      stopCanvasGesture(button);
       button.addEventListener('click', event => {
+        event.preventDefault();
         event.stopPropagation();
-        engine.toggleGroup(id);
+        collapseGroup(engine, id);
       });
       host.appendChild(button);
     });
@@ -46,18 +69,27 @@
       collapseAll.type = 'button';
       collapseAll.className = 'collapse-all-chip';
       collapseAll.textContent = 'Collapse all';
+      stopCanvasGesture(collapseAll);
       collapseAll.addEventListener('click', event => {
+        event.preventDefault();
         event.stopPropagation();
         engine.expanded.clear();
         engine.selectedId = null;
         engine.render();
-        requestAnimationFrame(() => engine.fit());
+        requestAnimationFrame(() => {
+          renderExpandedGroups(engine);
+          engine.fit();
+        });
       });
       host.appendChild(collapseAll);
     }
   }
 
   function classifyEdge(edge) {
+    const explicit = String(edge && edge.relation || '').trim().toLowerCase();
+    if (explicit === 'true') return 'true';
+    if (explicit === 'false') return 'false';
+
     const value = [edge && edge.label, edge && edge.relation, edge && edge.type]
       .filter(Boolean)
       .join(' ')
@@ -176,5 +208,6 @@
     return result;
   };
 
+  root.collapseGroup = collapseGroup;
   window.addEventListener('DOMContentLoaded', installThemeToggle);
 })();
