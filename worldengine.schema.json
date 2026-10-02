@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://worldengine.local/schema/v0.1.json",
+  "title": "WorldEngine IR v0.1",
+  "type": "object",
+  "required": ["nodes", "edges"],
+  "properties": {
+    "version": { "type": "string" },
+    "entryNode": { "type": "string" },
+    "program": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "summary": { "type": "string" },
+        "language": { "type": "string" },
+        "entryPoint": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "nodes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/node" }
+    },
+    "edges": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/edge" }
+    },
+    "annotations": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "sourceRef": {
+      "type": "object",
+      "required": ["file"],
+      "properties": {
+        "file": { "type": "string" },
+        "startLine": { "type": "integer", "minimum": 1 },
+        "endLine": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": true
+    },
+    "node": {
+      "type": "object",
+      "required": ["id", "type", "label"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "type": {
+          "type": "string",
+          "examples": ["start", "process", "decision", "subgraph", "external", "call", "return", "error", "end"]
+        },
+        "label": { "type": "string" },
+        "summary": { "type": "string" },
+        "parent": { "type": "string" },
+        "children": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "entryNode": { "type": "string" },
+        "exitNodes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "defaultExpanded": { "type": "boolean" },
+        "code": { "type": "string" },
+        "source": { "$ref": "#/$defs/sourceRef" },
+        "note": { "type": "string" },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "metrics": {
+          "type": "object",
+          "properties": {
+            "steps": { "type": "integer", "minimum": 0 },
+            "branches": { "type": "integer", "minimum": 0 },
+            "externalCalls": { "type": "integer", "minimum": 0 }
+          },
+          "additionalProperties": true
+        },
+        "metadata": { "type": "object", "additionalProperties": true }
+      },
+      "additionalProperties": true
+    },
+    "edge": {
+      "type": "object",
+      "required": ["from", "to"],
+      "properties": {
+        "id": { "type": "string" },
+        "from": { "type": "string" },
+        "to": { "type": "string" },
+        "label": { "type": "string" },
+        "type": { "type": "string" },
+        "relation": { "type": "string" },
+        "note": { "type": "string" },
+        "metadata": { "type": "object", "additionalProperties": true }
+      },
+      "additionalProperties": true
+    }
+  }
+}
